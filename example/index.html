@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>Audio Danmaku Example</title>
+		<style>
+			.audanmaku-player{
+				width: 480px;
+				height: 60px;
+				margin: 50px auto auto auto;
+			border: solid;
+			}
+
+			.play{background: url('http://www.alexkatz.me/codepen/images/play.png') ;}
+			.pause{background: url('http://www.alexkatz.me/codepen/images/pause.png') ;}
+
+			.play-btn{
+			    height:60px; 
+			    width: 60px;
+			    border: none;
+			    background-size: 50% 50%;
+			    background-repeat: no-repeat;
+			    background-position: center;
+			    float:left;
+			    outline:none;
+			}
+
+
+			.play-timeline{
+				width: 400px;
+				height: 20px;
+				margin-top: 20px;
+				float: left;
+				border-radius: 15px;
+				background: rgba(0,0,0,.3);
+			  
+			}
+			.play-runner{
+				width: 18px;
+				height: 18px;
+				border-radius: 50%;
+				margin-top: 1px;
+				background: rgba(0, 0, 0,1);
+
+			}
+
+		</style>
+
+	</head>
+	<body>
+		<audio class="audio-bullet" preload="true">
+	  	<source src="http://www.alexkatz.me/codepen/music/interlude.mp3">
+			<source src="http://www.alexkatz.me/codepen/music/interlude.ogg">
+		</audio>
+<!-- 		<div id="audioplayer">
+			<button id="pButton" class="play" onclick="play()"></button>
+			<div id="timeline">    
+				<div id="playhead"></div>
+			</div>
+		</div> -->
+		
+		<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+		<script src="../src/audiobullet.js"></script>
+		
+	</body>
+</html>
+
+
+
+
+
+
