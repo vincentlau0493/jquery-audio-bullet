@@ -4,13 +4,19 @@
 
 	/*
 	 *	Constructor function
-	 *  event:  bulletAdded, beforeBulletAdded, bulletRemoved, beforeBulletRemoved
+	 *  event:  bulletAdded, beforeBulletAdded, bulletRemoved, beforeBulletRemoved, hasBullet
 	 */
 
 
 	function AudioBullet(element) {
 
 		this.bulletArray = [];
+		this.bulletLimit = 10;
+		this.bulletBoard = {};
+
+		this.latency = 3; // 3 seconds
+
+		this.onSecond = -1;
 
 		this.music = element;
 		this.$element = $(element);
@@ -27,19 +33,37 @@
 
 
 		build: function() {
-
+			this.registerEvent();
 		},
 
 		add: function(obj) {
 
-			var currentTime = this.music.currentTime;
 			var o = {};
-			o.timestamp = currentTime;
-			o.text = obj;
+
+			o.toString = function() {
+				return this.timestamp + 's: ' + this.text;
+			}
+
+			if (typeof obj == 'string') {
+				o.text = obj;
+			} else { //is object
+				o = $.extend(o, obj);
+			}
+
+			o.timestamp = o.timestamp || Math.floor(this.music.currentTime);
+			o.rawTime = o.rawTime || this.music.currentTime;		
+			o.text = o.text || "";
+
+
 			this.$element.trigger('beforeBulletAdded', [o]);
-			this.bulletArray.push(o);
-			this.$element.trigger('bulletAdded', [o, this.bulletArray]);
-			console.log(this.bulletArray);
+
+			this.bulletBoard[o.timestamp] = this.bulletBoard[o.timestamp] || [];
+			this.bulletBoard[o.timestamp].push(o);
+
+			// this.bulletArray.push(o);
+			this.$element.trigger('bulletAdded', [o, this.bulletBoard]);
+			this.resetSecond(); // -1
+			this.$element.trigger('audio:timeUpdate', [{rawTime: o.rawTime, currentTime: o.timestamp}]); //update bullet
 			return o;
 
 		},
@@ -48,10 +72,78 @@
 
 		},
 
-		// return bullet array
+		resetSecond: function() {
+			this.onSecond = -1;
+		},
+
+		registerEvent: function() {
+
+			var _this = this;
+
+
+			//show bullet
+			_this.$element.on('audio:timeUpdate', function(e, time){
+
+				if (_this.bulletBoard[time.currentTime] && _this.bulletBoard[time.currentTime].length) {
+
+					if (_this.onSecond != time.currentTime) {
+						console.dir(_this.bulletBoard[time.currentTime]);
+						_this.$element.trigger('hasBullet', [_this.bulletBoard[time.currentTime]]); //arr
+						_this.onSecond = time.currentTime;
+					}
+				}
+			})
+
+			_this.$element.on('audio:moveRunner',function(){
+				_this.resetSecond();
+			})
+			_this.$element.on('audio:clickLine',function(){
+				_this.resetSecond();				
+			})
+		},
+
+
+
+		addBulletToArray: function(bullet) {
+
+			if (this.bulletArray == this.bulletLimit)
+				this.bulletArray.shift();
+
+			this.bulletArray.push(bullet);
+
+		},
+
+
+		// getter
 		bullets: function() {
 
 			return this.bulletArray;
+
+		},
+
+		bulletsBoard: function() {
+
+			return this.bulletBoard;
+
+		},
+
+		// getter
+		duration: function() {
+
+			return this.player.duration;
+
+		},
+		// getter
+		currentTime: function() {
+
+			return this.music.currentTime;
+
+		},
+
+		// getter
+		audio: function() {
+
+			return this.music;
 
 		},
 
@@ -93,7 +185,7 @@
 
 	/*
 	 *	player prototype function
-	 *	event: audio:moveRunner, audio:timeUpdate, audio:clickLine, audio:play, audio:pause
+	 *	event: audio:moveRunner, audio:timeUpdate, audio:clickLine, audio:play, audio:pause, audio:start, audio:end, audio:change
 	 */	
 	AudioPlayer.prototype = {
 
@@ -125,7 +217,9 @@
 			var _this = this;
 			var newMargLeft = e.pageX - _this.$timeline.offset().left;
 
-			_this.$element.trigger('audio:moveRunner', [{currentTime: _this.music.currentTime, offset: newMargLeft}]);
+			_this.$element.trigger('audio:moveRunner', [{rawTime: _this.music.currentTime, currentTime: Math.floor(_this.music.currentTime), offset: newMargLeft}]);
+
+			_this.$element.trigger('audio:change');
 
 			if (newMargLeft >= 0 && newMargLeft <= _this.timelineWidth) {
 				_this.$runner.css('margin-left', newMargLeft + "px");
@@ -140,13 +234,20 @@
 
 		timeUpdate: function() {
 			var _this = this;
+
+			if (_this.isMoving) return; // turn off
+
+			if (Math.floor(_this.music.currentTime) == 0)
+				_this.$element.trigger('audio:start').trigger('audio:change');
+
 			// trigger jquery event
-			_this.$element.trigger('audio:timeUpdate', [{currentTime: _this.music.currentTime}]);
+			_this.$element.trigger('audio:timeUpdate', [{rawTime: _this.music.currentTime, currentTime: Math.floor(_this.music.currentTime)}]);
 
 			var playPercent = _this.timelineWidth * (_this.music.currentTime / _this.duration);
 			_this.$runner.css('margin-left', playPercent + 'px');
 			if (_this.music.currentTime == _this.duration) {
 				//pause
+				_this.$element.trigger('audio:end');
 				_this.pause();
 			}
 		},
@@ -154,7 +255,8 @@
 			var _this = this;
 			_this.isMoving = true;
 			_this.$container.on('mousemove', _this.moveRunner.bind(_this));
-			_this.$element.off('timeupdate'); //temperory remove update effect
+
+			// _this.$element.off('timeupdate', _this.timeUpdate.bind(_this)); //temperory remove update effect
 		},
 
 		mouseUp: function(e) {
@@ -165,7 +267,7 @@
 				_this.$container.off('mousemove');
 				// change current time
 				_this.music.currentTime = _this.duration * _this.clickPercent.call(_this, e);
-				_this.$element.on('timeupdate', _this.timeUpdate.bind(_this));
+				// _this.$element.on('timeupdate', _this.timeUpdate.bind(_this));
 			}
 			_this.isMoving = false;
 		},
@@ -186,6 +288,7 @@
 
 			_this.$timeline.on('click', function(e) {
 				_this.$element.trigger('audio:clickLine');
+				_this.$element.trigger('audio:change');
 				_this.moveRunner.call(_this, e);
 				_this.music.currentTime = _this.duration * _this.clickPercent.call(_this, e);				
 			});
@@ -207,7 +310,8 @@
 
 		play: function() {
 			var _this = this;
-			_this.$element.trigger('audio:play', [{currentTime: _this.music.currentTime}]);
+
+			_this.$element.trigger('audio:play', [{rawTime: _this.music.currentTime, currentTime: Math.floor(_this.music.currentTime)}]);
 			_this.music.play();
 			// remove play, add pause
 			_this.$playBtn.removeClass('play').addClass('pause');
@@ -215,7 +319,7 @@
 
 		pause: function() {
 			var _this = this;
-			_this.$element.trigger('audio:pause', [{currentTime: _this.music.currentTime}]);
+			_this.$element.trigger('audio:pause', [{rawTime: _this.music.currentTime, currentTime: Math.floor(_this.music.currentTime)}]);
 			_this.music.pause();
 			// remove pause, add play
 			_this.$playBtn.removeClass('pause').addClass('play');

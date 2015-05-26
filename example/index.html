@@ -55,6 +55,7 @@
 		<div class="audanmaku-player">
 			<input type="text" class="bullet-input" />
 			<button class="bullet-add-btn">Add</button>
+			<div class="bullet-panel"></div>
 		</div>
 		<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
 		<script src="../src/audiobullet.js"></script>
@@ -63,6 +64,38 @@
 
 			$(function(){
 
+
+				$('.audio-bullet').on('audio:timeUpdate', function(e, obj) {
+
+					// console.log(obj.currentTime);
+
+				})
+
+				$('.audio-bullet').on('bulletAdded', function(e, obj, board){
+
+					// $('pre').text(arr);
+					console.log(board);
+					
+				})
+
+				$('.audio-bullet').on('hasBullet', function(e, arr){
+
+					var $panel = $('.bullet-panel');
+					$panel.empty();
+
+					$.each(arr, function(){
+
+						var $bullet = $('<p class="bullet"></p>');
+						$bullet.text(this.text);
+						$panel.append($bullet);
+					})
+					
+				})
+
+				$('.audio-bullet').on('audio:change', function() {
+					var $panel = $('.bullet-panel');
+					$panel.empty();
+				})
 
 				$('.bullet-add-btn').on('click', function(){
 
