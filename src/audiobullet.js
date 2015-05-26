@@ -4,16 +4,66 @@
 
 	/*
 	 *	Constructor function
+	 *  event:  bulletAdded, beforeBulletAdded, bulletRemoved, beforeBulletRemoved
 	 */
 
 
 	function AudioBullet(element) {
 
-		this.element = element;
+		this.bulletArray = [];
+
+		this.music = element;
 		this.$element = $(element);
 		this.player = new AudioPlayer(element);
 
+		this.build();
+
+
+
 	}
+
+
+	AudioBullet.prototype = {
+
+
+		build: function() {
+
+		},
+
+		add: function(obj) {
+
+			var currentTime = this.music.currentTime;
+			var o = {};
+			o.timestamp = currentTime;
+			o.text = obj;
+			this.$element.trigger('beforeBulletAdded', [o]);
+			this.bulletArray.push(o);
+			this.$element.trigger('bulletAdded', [o, this.bulletArray]);
+			console.log(this.bulletArray);
+			return o;
+
+		},
+
+		remove: function(obj) {
+
+		},
+
+		// return bullet array
+		bullets: function() {
+
+			return this.bulletArray;
+
+		},
+
+		config: function() {
+
+		}
+
+
+
+	}
+
+
 
 	function AudioPlayer(element) {
 
@@ -43,7 +93,7 @@
 
 	/*
 	 *	player prototype function
-	 *	event: 
+	 *	event: audio:moveRunner, audio:timeUpdate, audio:clickLine, audio:play, audio:pause
 	 */	
 	AudioPlayer.prototype = {
 
@@ -53,7 +103,6 @@
 
 			// build player widget
 			this.buildWidget(); 
-
 			// register event
 			this.registerEvent();
 		},
@@ -76,7 +125,7 @@
 			var _this = this;
 			var newMargLeft = e.pageX - _this.$timeline.offset().left;
 
-			_this.$element.trigger('audio:moverunner', [{currentTime: _this.music.currentTime, offset: newMargLeft}]);
+			_this.$element.trigger('audio:moveRunner', [{currentTime: _this.music.currentTime, offset: newMargLeft}]);
 
 			if (newMargLeft >= 0 && newMargLeft <= _this.timelineWidth) {
 				_this.$runner.css('margin-left', newMargLeft + "px");
@@ -92,7 +141,7 @@
 		timeUpdate: function() {
 			var _this = this;
 			// trigger jquery event
-			_this.$element.trigger('audio:timeupdate', [{currentTime: _this.music.currentTime}]);
+			_this.$element.trigger('audio:timeUpdate', [{currentTime: _this.music.currentTime}]);
 
 			var playPercent = _this.timelineWidth * (_this.music.currentTime / _this.duration);
 			_this.$runner.css('margin-left', playPercent + 'px');
@@ -136,7 +185,7 @@
 			_this.$element.on('timeupdate', _this.timeUpdate.bind(_this));
 
 			_this.$timeline.on('click', function(e) {
-				_this.$element.trigger('audio:clickline');
+				_this.$element.trigger('audio:clickLine');
 				_this.moveRunner.call(_this, e);
 				_this.music.currentTime = _this.duration * _this.clickPercent.call(_this, e);				
 			});
@@ -187,14 +236,46 @@
 
 	$.fn.audiobullet = function(arg1, arg2, arg3) {
 
+		var results = [];
 
-		return this.each(function(){
+		this.each(function(){
 
-			var audiobullet = new AudioBullet(this);
+			var audiobullet = $(this).data('audiobullet');
+
+			if (!audiobullet) {
+				console.log('init');
+				audiobullet = new AudioBullet(this);
+				//add flag
+				$(this).data('audiobullet', audiobullet);
+				results.push(audiobullet);
+
+			} else if (!arg2 && !arg3) {
+				console.log('one arg');
+				//return value or config
+				if (typeof arg1 == 'string') {
+					
+					results.push(audiobullet[arg1]());
+
+				} else if (typeof arg1 == 'object') {
+
+					audiobullet.config(arg1);
+					results.push(audiobullet);
+
+				} 
+
+			} else {
+				console.log('two args');
+				//operation
+				var retVal = audiobullet[arg1](arg2, arg3);
+				if (retVal) results.push(retVal);
+			}
 
 		});
 
-
+		if (arguments.length <= 1)
+			return results.length > 1 ? results : results[0];
+		else
+			return results;
 	}
 
 

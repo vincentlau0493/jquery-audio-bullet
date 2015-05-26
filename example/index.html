@@ -52,16 +52,32 @@
 	  	<source src="http://www.alexkatz.me/codepen/music/interlude.mp3">
 			<source src="http://www.alexkatz.me/codepen/music/interlude.ogg">
 		</audio>
-<!-- 		<div id="audioplayer">
-			<button id="pButton" class="play" onclick="play()"></button>
-			<div id="timeline">    
-				<div id="playhead"></div>
-			</div>
-		</div> -->
-		
+		<div class="audanmaku-player">
+			<input type="text" class="bullet-input" />
+			<button class="bullet-add-btn">Add</button>
+		</div>
 		<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
 		<script src="../src/audiobullet.js"></script>
 		
+		<script>
+
+			$(function(){
+
+
+				$('.bullet-add-btn').on('click', function(){
+
+					$('.audio-bullet').audiobullet('add', $('input').val());
+
+				})
+
+
+
+			})
+
+
+		</script>
+
+
 	</body>
 </html>
 
