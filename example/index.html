@@ -3,12 +3,13 @@
 	<head>
 		<meta charset="UTF-8">
 		<title>Audio Danmaku Example</title>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
 		<style>
-			.audanmaku-player{
+			.bullet-player{
 				width: 480px;
 				height: 60px;
 				margin: 50px auto auto auto;
-			border: solid;
+				/*border: solid;*/
 			}
 
 			.play{background: url('http://www.alexkatz.me/codepen/images/play.png') ;}
@@ -24,9 +25,16 @@
 			    float:left;
 			    outline:none;
 			}
-
+			
+			.bullet-anchor {
+				width: 2px;
+				background-color: orange;
+				top: 0;
+				height: 100%;
+			}
 
 			.play-timeline{
+				position: relative;
 				width: 400px;
 				height: 20px;
 				margin-top: 20px;
@@ -48,15 +56,16 @@
 
 	</head>
 	<body>
+
 		<audio class="audio-bullet" preload="true">
-	  	<source src="http://www.alexkatz.me/codepen/music/interlude.mp3">
-			<source src="http://www.alexkatz.me/codepen/music/interlude.ogg">
+	  	<source src="Sleepmakeswaves - It's Dark, It's Cold, It's Winter.mp3">
+			<!-- <source src="http://www.alexkatz.me/codepen/music/interlude.ogg"> -->
 		</audio>
-		<div class="audanmaku-player">
+		<form class="bullet-player" id="tagging">
 			<input type="text" class="bullet-input" />
 			<button class="bullet-add-btn">Add</button>
 			<div class="bullet-panel"></div>
-		</div>
+		</form>
 		<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
 		<script src="../src/audiobullet.js"></script>
 		
@@ -86,7 +95,7 @@
 					$.each(arr, function(){
 
 						var $bullet = $('<p class="bullet"></p>');
-						$bullet.text(this.text);
+						$bullet.text(this.uname + ": " + this.text);
 						$panel.append($bullet);
 					})
 					
@@ -97,9 +106,16 @@
 					$panel.empty();
 				})
 
-				$('.bullet-add-btn').on('click', function(){
+				$('#tagging').on('submit', function(){
 
-					$('.audio-bullet').audiobullet('add', $('input').val());
+					var uname = 'me';
+					var obj = {};
+					obj.uname = uname;
+					obj.text = $('input').val();
+
+					$('.audio-bullet').audiobullet('add', obj);
+					$('input').val("");
+					return false;
 
 				})
 

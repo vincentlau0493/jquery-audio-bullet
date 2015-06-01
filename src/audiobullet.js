@@ -14,6 +14,8 @@
 		this.bulletLimit = 10;
 		this.bulletBoard = {};
 
+		this.isAnchorShown = true;
+
 		this.latency = 3; // 3 seconds
 
 		this.onSecond = -1;
@@ -64,7 +66,31 @@
 			this.$element.trigger('bulletAdded', [o, this.bulletBoard]);
 			this.resetSecond(); // -1
 			this.$element.trigger('audio:timeUpdate', [{rawTime: o.rawTime, currentTime: o.timestamp}]); //update bullet
+
+			this.addAnchor(o.rawTime);
+
 			return o;
+
+		},
+
+		addAnchor: function(rawTime) {
+
+			var $anchor = $('<div class="bullet-anchor"></div>');
+			if (!this.isAnchorShown)
+				$anchor.css('visibility', 'hidden');
+
+			var percent = this.getOffset(rawTime);
+
+			$anchor.css('position', 'absolute');
+			$anchor.css('left', percent + 'px');
+			$anchor.attr('anchor-timestamp', rawTime);
+			this.player.$timeline.append($anchor);
+		},
+
+
+		getOffset: function(time) {
+
+			return this.player.timelineWidth * (time / this.player.duration);
 
 		},
 
@@ -94,12 +120,18 @@
 				}
 			})
 
+			_this.$element.on('audio:start', function(){
+				_this.resetSecond();
+			})
 			_this.$element.on('audio:moveRunner',function(){
 				_this.resetSecond();
 			})
 			_this.$element.on('audio:clickLine',function(){
 				_this.resetSecond();				
 			})
+
+
+
 		},
 
 
@@ -161,10 +193,11 @@
 
 		var _this = this;
 
+
 		this.music = element;
 		this.duration = 0; // get it later
 		this.$element = $(element);
-		this.$container = $('<div class="audanmaku-player"></div>');
+		this.$container = $('<div class="bullet-player"></div>');
 
 		this.$playBtn = null;
 		this.$timeline = null;
@@ -176,9 +209,9 @@
 		this.build();
 
 		// get duration
-		this.$element.on('canplaythrough', function(){
+		// this.$element.on('canplaythrough', function(){
 			_this.duration = _this.music.duration;
-		})
+		// })
 
 
 	}
