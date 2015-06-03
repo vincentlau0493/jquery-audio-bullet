@@ -201,8 +201,12 @@
 
 		this.$playBtn = null;
 		this.$timeline = null;
+		this.$timelinePassed = null;
 		this.$runner = null;
 		this.timelineWidth = 0;
+
+		this.$timePanel = null;
+		this.$totalTimePanel = null;
 
 		this.isMoving = false;
 
@@ -212,7 +216,7 @@
 		// this.$element.on('canplaythrough', function(){
 			_this.duration = _this.music.duration;
 		// })
-
+		this.$totalTimePanel.text(this.toHHMMSS(this.duration));
 
 	}
 
@@ -235,15 +239,18 @@
 		buildWidget: function() {
 			this.$playBtn = $('<button class="play-btn play"></button>');
 			this.$timeline = $('<div class="play-timeline">');
+			this.$timelinePassed = $('<div class="play-timeline-passed">');
+			this.$timePanel = $('<div class="time-panel">00:00</div>');
+			this.$totalTimePanel = $('<div class="total-time-panel">');
 			this.$runner = $('<div class="play-runner"></div>');
 
-			this.$timeline.html(this.$runner);
-			this.$container.append(this.$playBtn).append(this.$timeline);
+			this.$timeline.append(this.$timelinePassed).append(this.$runner);
+			this.$container.append(this.$playBtn).append(this.$timePanel).append(this.$timeline).append(this.$totalTimePanel);
 			this.$element.after(this.$container);
 			this.$container.append(this.$element);
 
-			this.timelineWidth = this.$timeline.width() - this.$runner.width();
-
+			// this.timelineWidth = this.$timeline.width() - this.$runner.width();
+			this.timelineWidth = this.$timeline.width();
 		},
 
 		moveRunner: function(e) {
@@ -274,10 +281,18 @@
 				_this.$element.trigger('audio:start').trigger('audio:change');
 
 			// trigger jquery event
-			_this.$element.trigger('audio:timeUpdate', [{rawTime: _this.music.currentTime, currentTime: Math.floor(_this.music.currentTime)}]);
+			_this.$element.trigger('audio:timeUpdate', [{
+				rawTime: _this.music.currentTime, 
+				currentTime: Math.floor(_this.music.currentTime),
+				formatTime: _this.toHHMMSS(_this.music.currentTime)
+			}]);
+
+			//change time
+			_this.$timePanel.text(_this.toHHMMSS(Math.floor(_this.music.currentTime)));
 
 			var playPercent = _this.timelineWidth * (_this.music.currentTime / _this.duration);
 			_this.$runner.css('margin-left', playPercent + 'px');
+			_this.$timelinePassed.css('width', playPercent + 'px');
 			if (_this.music.currentTime == _this.duration) {
 				//pause
 				_this.$element.trigger('audio:end');
@@ -367,8 +382,20 @@
 			var _this = this;
 			_this.reset();
 			_this.play();
-		}
+		},
 
+		toHHMMSS: function (second) {
+			var sec_num = parseInt(second, 10); // don't forget the second param
+			var hours   = Math.floor(sec_num / 3600);
+			var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+			var seconds = sec_num - (hours * 3600) - (minutes * 60);
+
+			// if (hours   < 10) {hours   = "0"+hours;}
+			if (minutes < 10) {minutes = "0"+minutes;}
+			if (seconds < 10) {seconds = "0"+seconds;}
+			var time    = hours == 0 ? minutes+':'+seconds : hours+':'+minutes+':'+seconds;
+			return time;
+		}
 	}
 
 	$.fn.audiobullet = function(arg1, arg2, arg3) {
@@ -419,5 +446,10 @@
 	$('.audio-bullet').audiobullet();
 
 })(window.jQuery);
+
+
+
+
+
 
 
