@@ -2,86 +2,193 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<title>Audio Danmaku Example</title>
+		<title>Audio Bullet Example</title>
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
 		<link rel="stylesheet" href="../src/audiobullet.css">
 		<style>
+			.headline {
+				width: 800px;
+			  margin: 50px auto;
+			  margin-bottom: 30px;
+			  border-bottom: 1px solid #999;
+			}
 
+			.music-widget .music-meta {
+			  margin: 0px auto;
+			  width: 800px;
+			}
 
+			.bullet-popover {
+			  position: absolute;
+			  opacity: 1;
+			  height: 200%;
+			  top: 100%;
+			  font-size: 14px;
+			  -webkit-transition: left 0.25s ease;
+			  -moz-transition: left 0.25s ease;
+			  -o-transition: left 0.25s ease;
+			  transition: left 0.25s ease;
+			  -webkit-transition: opacity, 0.25s ease;
+			  -moz-transition: opacity, 0.25s ease;
+			  -o-transition: opacity, 0.25s ease;
+			  transition: opacity, 0.25s ease;
+			}
+
+			.bullet-popover:before {
+			  content: "";
+			  display: inline-block;
+			  width: 4px;
+			  height: 100%;
+			  margin-right: 5px;
+			  background-image: linear-gradient(rgba(241, 196, 15, 0.95), rgba(241, 196, 15, 0.1));
+			}
+
+			.bullet-popover-hide {
+			  opacity: 0;
+			  -webkit-transition: opacity, 0.25s ease;
+			  -moz-transition: opacity, 0.25s ease;
+			  -o-transition: opacity, 0.25s ease;
+			  transition: opacity, 0.25s ease;
+			}
 		</style>
 
 	</head>
 	<body>
+		<h2 class="headline">Music Bullet Plugin</h2>		
+		<div class="music-widget">
+			<div class="music-meta">
+				<h4 class="music-title">It's Dark, It's Cold, It's Winter</h4>
+				<p class="music-artist">Sleepmakeswaves</p>
+			</div>
 
-		<audio class="audio-bullet" preload="true">
-	  	<source src="Sleepmakeswaves - It's Dark, It's Cold, It's Winter.mp3">
-			<!-- <source src="http://www.alexkatz.me/codepen/music/interlude.ogg"> -->
-		</audio>
-		<form class="bullet-player" id="tagging">
-			<input type="text" class="bullet-input" />
-			<button class="bullet-add-btn">Add</button>
-			<div class="bullet-panel"></div>
-		</form>
+			<audio class="audio-bullet" preload="true">
+		  	  <source src="Sleepmakeswaves - It's Dark, It's Cold, It's Winter.mp3">
+				<!-- <source src="http://www.alexkatz.me/codepen/music/interlude.ogg"> -->
+			</audio>
+			<form class="bullet-form" style="display:none">
+				<div class="input-group">
+					<div class="input-group-btn">
+					<button type="button" class="btn btn-default bullet-add-btn">Add</button>
+					</div><!-- /btn-group -->
+					<input type="text" class="bullet-input form-control" placeholder="say something..."/>
+				</div>
+				<!-- <button class="bullet-add-btn">Add</button> -->
+				<!-- <div class="bullet-panel"></div> -->
+			</form>
+		</div>
 		<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
 		<script src="../src/audiobullet.js"></script>
 		
 		<script>
 
-
-
-
-
 			$(function(){
 
+				$('.audio-bullet').audiobullet();
 
-				$('.audio-bullet').on('audio:timeUpdate', function(e, obj) {
+				activateAudioBullet();
+				//preload data
+				preloadData($('.audio-bullet'));
 
-					// console.log(obj.currentTime);
+			})
 
+
+			function activateAudioBullet() {
+				var showPopover = function($root, obj) {
+					var $anchor = $root.find('.bullet-anchor[anchor-timestamp="'+obj.timestamp+'"]');
+					var offset = $anchor.css('left');
+					$root.find('.bullet-popover').css('left', offset);
+					if (!$anchor.length) return;
+
+					setTimeout(function(){
+						$root.find('.bullet-popover').removeClass('bullet-popover-hide');
+					},250)
+
+					$root.find('.bullet-popover').text($anchor.data('bullet').text);
+				}
+
+				var hidePopover = function($root) {
+					$root.find('.bullet-popover').addClass('bullet-popover-hide');
+				}
+
+				$('.audio-bullet').one('audio:play', function(){
+					$(this).closest('.music-widget').find('.bullet-form').slideDown();
 				})
 
-				$('.audio-bullet').on('bulletAdded', function(e, obj, board){
+				$('body').on('audio:timeUpdate', '.audio-bullet', function(e, obj) {
+					// console.log(obj.currentTime);
+					showPopover($(this).closest('.music-widget'), obj);
+				})
 
+				$('body').on('bulletAdded','.audio-bullet', function(e, obj, board){
 					// $('pre').text(arr);
 					console.log(board);
-					
 				})
 
-				$('.audio-bullet').on('hasBullet', function(e, arr){
-
-					var $panel = $('.bullet-panel');
-					$panel.empty();
-
-					$.each(arr, function(){
-
-						var $bullet = $('<p class="bullet"></p>');
-						$bullet.text(this.uname + ": " + this.text);
-						$panel.append($bullet);
-					})
-					
+				$('body').on('hasBullet', '.audio-bullet', function(e, arr){
 				})
 
-				$('.audio-bullet').on('audio:change', function() {
-					var $panel = $('.bullet-panel');
-					$panel.empty();
+				$('body').on('audio:change','.audio-bullet', function() {
+					// var $panel = $(this).closest(".music-widget").find('.bullet-panel');
+					// $panel.empty();
+					hidePopover($(this).closest('.music-widget'));
 				})
 
-				$('#tagging').on('submit', function(){
-
+				$('body').on('submit','.bullet-form', function(){
 					var uname = 'me';
 					var obj = {};
 					obj.uname = uname;
-					obj.text = $('input').val();
+					obj.text = $(this).find('input').val();
 
-					$('.audio-bullet').audiobullet('add', obj);
-					$('input').val("");
+					$(this).closest('.music-widget').find('.audio-bullet').audiobullet('add', obj);
+					$(this).find('input').val("");
 					return false;
+				})	
 
+
+				$('body').on('mouseenter', '.bullet-anchor', function(){
+					var bullet = $(this).data('bullet');
+					showPopover($(this).closest('.music-widget'), bullet);
 				})
 
+				$('body').on('mouseleave', '.bullet-anchor, .play-timeline, .play-timeline-passed', function(){
+					hidePopover($(this).closest('.music-widget'));
+				})
 
+			}
 
-			})
+			function preloadData($audio) {
+
+					var comment1 = {};
+					comment1.preload = true;
+					comment1.text = "It's amazing!!";
+					comment1.timestamp = 5;
+					$audio.audiobullet('add', comment1);
+
+					var comment2 = {};
+					comment2.preload = true;
+					comment2.text = "Wow";
+					comment2.timestamp = 15;
+					$audio.audiobullet('add', comment2);
+
+					var comment3 = {};
+					comment3.preload = true;
+					comment3.text = "I like it";
+					comment3.timestamp = 32;
+					$audio.audiobullet('add', comment3);
+
+					var comment4 = {};
+					comment4.preload = true;
+					comment4.text = "^-^";
+					comment4.timestamp = 140;
+					$audio.audiobullet('add', comment4);
+
+					var comment5 = {};
+					comment5.preload = true;
+					comment5.text = "That's beautiful";
+					comment5.timestamp = 200;
+					$audio.audiobullet('add', comment5);
+
+			}
 
 
 		</script>

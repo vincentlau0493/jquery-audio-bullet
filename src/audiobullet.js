@@ -52,38 +52,45 @@
 				o = $.extend(o, obj);
 			}
 
-			o.timestamp = o.timestamp || Math.floor(this.music.currentTime);
-			o.rawTime = o.rawTime || this.music.currentTime;		
+			o.timestamp = Math.floor(o.timestamp) || Math.floor(this.music.currentTime);
+			o.rawTime = o.rawTime || this.music.currentTime;	
+			o.preload = o.preload || false;	
 			o.text = o.text || "";
 
-
-			this.$element.trigger('beforeBulletAdded', [o]);
+			if (!o.preload)
+				this.$element.trigger('beforeBulletAdded', [o]);
 
 			this.bulletBoard[o.timestamp] = this.bulletBoard[o.timestamp] || [];
 			this.bulletBoard[o.timestamp].push(o);
 
 			// this.bulletArray.push(o);
-			this.$element.trigger('bulletAdded', [o, this.bulletBoard]);
-			this.resetSecond(); // -1
-			this.$element.trigger('audio:timeUpdate', [{rawTime: o.rawTime, currentTime: o.timestamp}]); //update bullet
+			if (!o.preload) {
+				this.$element.trigger('bulletAdded', [o, this.bulletBoard]);
+				this.resetSecond(); // -1
+				this.$element.trigger('audio:timeUpdate', [{rawTime: o.rawTime, timestamp: o.timestamp}]); //update bullet				
+			}
 
-			this.addAnchor(o.rawTime);
+
+			this.addAnchor(o);
 
 			return o;
 
 		},
 
-		addAnchor: function(rawTime) {
+		addAnchor: function(obj) {
 
 			var $anchor = $('<div class="bullet-anchor"></div>');
+			$anchor.data('bullet', obj);
 			if (!this.isAnchorShown)
 				$anchor.css('visibility', 'hidden');
+			if (this.bulletBoard[obj.timestamp].length != 1) return;
 
-			var percent = this.getOffset(rawTime);
+			var percent = this.getOffset(obj.timestamp);
 
 			$anchor.css('position', 'absolute');
 			$anchor.css('left', percent + 'px');
-			$anchor.attr('anchor-timestamp', rawTime);
+			$anchor.attr('anchor-timestamp', obj.timestamp);
+			$anchor.data('bullet', obj);
 			this.player.$timeline.append($anchor);
 		},
 
@@ -112,7 +119,7 @@
 
 				if (_this.bulletBoard[time.currentTime] && _this.bulletBoard[time.currentTime].length) {
 
-					if (_this.onSecond != time.currentTime) {
+					if (_this.onSecond != time.timestamp) {
 						console.dir(_this.bulletBoard[time.currentTime]);
 						_this.$element.trigger('hasBullet', [_this.bulletBoard[time.currentTime]]); //arr
 						_this.onSecond = time.currentTime;
@@ -210,13 +217,26 @@
 
 		this.isMoving = false;
 
+
+
+		this.isLoad = false;
+
 		this.build();
 
 		// get duration
-		// this.$element.on('canplaythrough', function(){
-			_this.duration = _this.music.duration;
+		this.$totalTimePanel.text("00:00");
+
+
+		// this.$element.on('canplay', function(){
+			// console.log('here-')
+			if (!_this.isLoad) {
+				_this.duration = _this.music.duration;
+				_this.$totalTimePanel.text(_this.toHHMMSS(_this.duration));		
+				_this.$element.trigger('buildSuccess');
+				_this.isLoad = true;
+			}
+
 		// })
-		this.$totalTimePanel.text(this.toHHMMSS(this.duration));
 
 	}
 
@@ -234,6 +254,7 @@
 			this.buildWidget(); 
 			// register event
 			this.registerEvent();
+
 		},
 
 		buildWidget: function() {
@@ -244,7 +265,7 @@
 			this.$totalTimePanel = $('<div class="total-time-panel">');
 			this.$runner = $('<div class="play-runner"></div>');
 
-			this.$timeline.append(this.$timelinePassed).append(this.$runner);
+			this.$timeline.append(this.$timelinePassed).append(this.$runner).append('<div class="bullet-popover bullet-popover-hide">');
 			this.$container.append(this.$playBtn).append(this.$timePanel).append(this.$timeline).append(this.$totalTimePanel);
 			this.$element.after(this.$container);
 			this.$container.append(this.$element);
@@ -283,7 +304,7 @@
 			// trigger jquery event
 			_this.$element.trigger('audio:timeUpdate', [{
 				rawTime: _this.music.currentTime, 
-				currentTime: Math.floor(_this.music.currentTime),
+				timestamp: Math.floor(_this.music.currentTime),
 				formatTime: _this.toHHMMSS(_this.music.currentTime)
 			}]);
 
@@ -443,7 +464,7 @@
 	}
 
 
-	$('.audio-bullet').audiobullet();
+	// $('.audio-bullet').audiobullet();
 
 })(window.jQuery);
 
